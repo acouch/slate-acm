@@ -1,0 +1,5 @@
+.nvd3.nv-scatter .nv-groups .nv-point.title-text.hover, .nvd3 .nv-groups .nv-point.text-title.hover {
+  stroke-width: 0px;
+  fill-opacity: .95 !important;
+  stroke-opacity: .95 !important;
+}

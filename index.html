@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<link href="nv.d3.css" rel="stylesheet" type="text/css">
+
+<style>
+
+body {
+  overflow-y:scroll;
+  margin: 0;
+  padding: 0;
+}
+
+svg {
+  overflow: hidden;
+}
+
+div {
+  border: 0;
+  margin: 0;
+}
+
+/*
+#offsetDiv {
+  margin-left: 100px;
+  margin-top: 100px;
+}
+*/
+
+
+#test1 {
+  margin: 0;
+}
+
+#test1 svg {
+  height: 500px;
+}
+
+</style>
+
+<body>
+
+<div class="container">
+<div class="row">
+  <h1>Effort Reward Matrix</h1>
+
+  <div id="offsetDiv">
+    <div id="menu">
+      <a href="#" id="toggle-title">Toggle Titles</a>
+    </div>
+    <div id="test1" class='with-3d-shadow with-transitions'>
+      <svg></svg>
+    </div>
+    <div id="list"></div>
+  </div>
+  </div>
+  </div>
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+
+<script src="d3.v3.js"></script>
+<!--<script src="../lib/fisheye.js"></script>-->
+<script src="nv.d3.js"></script>
+<script src="tooltip.js"></script>
+<script src="utils.js"></script>
+<script src="legend.js"></script>
+<script src="axis.js"></script>
+<script src="scatter.js"></script>
+<script src="scatterChart.js"></script>
+<script>
+
+  //var api = "api.json";
+  var api = "https://api.github.com/repos/acouch/Action-Priority-Matrix/issues";
+
+  $.getJSON(api, function(data){
+    var rows = [];
+    $.each( data, function( key, val ) {
+      var quickList = [];
+
+      var effort = '';
+      var reward = '';
+      var color = "grey"
+      $.each(val.labels, function ( num, label ) {
+
+        if (label.name.substring(6,0) == "effort")
+          effort = label.name.replace("effort-", "");
+        else if (label.name.substring(6,0) == "reward")
+          reward = label.name.replace("reward-", "");
+
+        if (reward > 5 && effort < 5)
+          color = "green";
+        else if (reward > 5 && effort > 5)
+          color = "blue";
+        else if (reward < 5 && effort < 5)
+          color = "orange";
+        else if (reward < 5 && effort > 5)
+          color = "red";
+      });
+      if (color == "green")
+        quickList.push({
+          "title": val.title,
+          "user": val.user.login,
+          "avatar": val.user.avatar_url,
+          "link": val.html_url
+        });
+
+      rows.push({
+        key: val.title,
+        values:[{
+          "color": color,
+          "shape": "circle",
+          "title": val.title,
+          "size": 0.4,
+          "x": effort,
+          "y": reward
+        }]
+      });
+      var elm = "";
+      elm = "<h2>Quick Wins</h2><ul>";
+      if (quickList.length) {
+      $.each(quickList, function(item, issue) {
+        elm = elm + "<li class='layout-crotchet'><a class='billboard' href=" + issue.link + "><h3 class='billboard-label'>" + issue.title + "</h3></a></li>";
+      });
+      elm = elm + "</ul>";
+      console.log(elm);
+      $("#list").html(elm);
+      }
+    });
+    // TODO: unhack;
+    rows.push({
+        key: "none",
+        values:[{
+          "color": "white",
+          "shape": "circle",
+          "size": 0.1,
+          "x": 10,
+          "y": 10
+        }]
+    });
+    rows.push({
+        key: "none",
+        values:[{
+          "color": "white",
+          "shape": "circle",
+          "size": 0.1,
+          "x": 0,
+          "y": 0
+        }]
+    });
+
+    var chart;
+    nv.addGraph(function() {
+      chart = nv.models.scatterChart()
+                    .showDistX(true)
+                    .showDistY(true)
+                    .showLegend(false)
+
+                    .useVoronoi(true)
+                    .color(["#444"])
+                    //.transitionDuration(300)
+
+      chart.xAxis.axisLabel('Effort');
+      chart.yAxis.axisLabel('Impact');
+
+      chart.tooltipContent(function(title, key) {
+        console.log(key);
+        console.log(title);
+        console.log(data[key]);
+          return '<h3>' + title + '</h3>';
+      });
+
+      var svg = d3.select('#test1 svg')
+          .datum(rows)
+          .call(chart);
+
+      //nv.utils.windowResize(chart.update);
+
+
+      chart.dispatch.on('stateChange', function(e) { ('New State:', JSON.stringify(e)); });
+
+      var ticks = chart.xAxis.scale()
+         .ticks(Math.abs(chart.xAxis.scale().range()[1] - chart.xAxis.scale().range()[0]) / 100);
+
+      var five = +ticks.indexOf(5);
+
+      if (five > 0) {
+        $("g.nv-x g.nv-axis").find("g").eq(five + 1).attr("stroke-width", 7);
+        var x5 = $("g.nv-x g.nv-axis").find("g").eq(five+1).attr("transform");
+
+        var x3 = $("g.nv-x g.nv-axis").find("g").eq(3).attr("transform").slice(10);
+        x3 = x3.substring(0, x3.length - 1).split(",");
+        var x7 = $("g.nv-x g.nv-axis").find("g").eq(8).attr("transform").slice(10);
+        x7 = x7.substring(0, x7.length - 1).split(",");
+        var y7 = $("g.nv-y g.nv-axis").find("g").eq(8).attr("transform").slice(10);
+        y7 = y7.substring(0, y7.length - 1).split(",");
+        var y3 = $("g.nv-y g.nv-axis").find("g").eq(3).attr("transform").slice(10);
+        y3 = y3.substring(0, y3.length - 1).split(",");
+        console.log(y7);
+
+        var quickWins = d3.select("g")
+        quickWins.append("text")
+          .attr("x", x3[0] - 30)
+          .attr("y", y7[1])
+          .attr("fill", "gray")
+          .attr("class", "exp-text")
+          .text("Quick Wins")
+
+        var MajorProjects = d3.select("g")
+        MajorProjects.append("text")
+          .attr("x", x7[0] - 30)
+          .attr("y", y7[1])
+          .attr("fill", "gray")
+          .attr("class", "exp-text")
+          .text("Major Projects")
+
+       var fillIns = d3.select("g")
+       fillIns.append("text")
+         .attr("x", x3[0] - 20)
+         .attr("y", y3[1])
+         .attr("fill", "gray")
+         .attr("class", "exp-text")
+         .text("Fill Ins")
+
+       var HardSlogs = d3.select("g")
+       HardSlogs.append("text")
+         .attr("x", x7[0] - 20)
+         .attr("y", y3[1])
+         .attr("fill", "gray")
+         .attr("class", "exp-text")
+         .text("Hard Slogs")
+
+      }
+      else {
+        var l = ticks.length - 1;
+        var mid = Math.round(l/2);
+
+
+        var x4 = $("g.nv-x g.nv-axis").find("g").eq(mid+1).attr("transform").slice(10);
+        x4 = x4.substring(0, x4.length - 1).split(",");
+        var x5 = $("g.nv-x g.nv-axis").find("g").eq(mid).attr("transform").slice(10);
+        x5 = x5.substring(0, x5.length - 1).split(",");
+
+        var x = +x5[0] + +x4[0] - +x5[0];
+
+        var barx = d3.select("svg");
+
+        barx.append("rect")
+          .attr("x", x)
+          .attr("y", 30)
+          .attr("fill", "#e5e5e5")
+          .attr("width", 7)
+          .attr("height", 420)
+      }
+
+      $("g.nv-y g.nv-axis").find("g").eq(6).attr("stroke-width", 7);
+
+      return chart;
+    });
+
+
+    });
+    $("#toggle-title").click(function(){
+      $(".title-text").toggle();
+
+    });
+
+
+
+</script>
