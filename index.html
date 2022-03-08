@@ -42,7 +42,7 @@ div {
 
 <div class="container">
 <div class="row">
-  <h1>Effort Reward Matrix</h1>
+  <h1>Slate - Effort Reward Matrix</h1>
 
   <div id="offsetDiv">
     <div id="menu">
@@ -71,8 +71,9 @@ div {
 <script src="scatterChart.js"></script>
 <script>
 
-  //var api = "api.json";
-  var api = "https://api.github.com/repos/acouch/Action-Priority-Matrix/issues";
+  var account = 'acouch';
+  var repo = 'slate-acm';
+  var api = "https://api.github.com/repos/acouch/slate-acm/issues";
 
   $.getJSON(api, function(data){
     var rows = [];
